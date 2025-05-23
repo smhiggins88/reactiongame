@@ -1,10 +1,17 @@
 import React from 'react';
-import './Light.css'; // Styles specific to the light component
+import './light.css';
 
-const Light = ({ isActive }) => {
-    return (
-        <div className={`light ${isActive ? 'red' : ''}`}></div>
-    );
-};
+function Light({ lights }) {
+  return (
+    <div className="light-container">
+      {lights.map((on, index) => (
+        <div
+          key={index}
+          className={`light ${on ? 'on' : ''}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default Light;

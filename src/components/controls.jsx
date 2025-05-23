@@ -1,18 +1,30 @@
 import React from 'react';
+import './controls.css';
 
-const Controls = ({ onStart, onRestart, showStart, showRestart, buttonText }) => {
-    return (
-        <div className="controls">
-            {showStart && (
-                // This button now serves dual purpose
-                <button onClick={onStart}>{buttonText}</button>
-            )}
-            {/* The restart button logic remains similar, but it will only appear after a game completes */}
-            {showRestart && (
-                <button onClick={onRestart}>Restart Game</button>
-            )}
-        </div>
-    );
-};
+function Controls({ gameState, onStart, onClick, onRestart, reactionTime }) {
+  return (
+    <div className="controls">
+      {gameState === 'ready' && <button onClick={onStart}>Start</button>}
+
+      {gameState === 'waiting' && <button onClick={onClick}>React!</button>}
+
+      {gameState === 'go' && <button onClick={onClick}>React!</button>}
+
+      {gameState === 'falseStart' && (
+        <>
+          <p className="result-text">False Start!</p>
+          <button onClick={onRestart}>Try Again</button>
+        </>
+      )}
+
+      {gameState === 'result' && (
+        <>
+          <p className="result-text">Your time: {reactionTime} ms</p>
+          <button onClick={onRestart}>Try Again</button>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default Controls;
