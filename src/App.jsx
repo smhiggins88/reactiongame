@@ -9,18 +9,16 @@ function App() {
     const [result, setResult] = useState('Your Reaction Time: -- ms');
     const [gameActive, setGameActive] = useState(false); // True when lights are sequencing or waiting for GO
     const [gameEnded, setGameEnded] = useState(false); // True when a game has completed (too soon or success)
+    const [currentLightIndex, setCurrentLightIndex] = useState(-1); // -1: no lights, 0-4: sequencing, 5: all red
 
-    // useRef is used for values that persist across renders but don't cause re-renders
     const reactionStartTime = useRef(null); // Stores the exact timestamp when lights turn off
-    const lightSequenceTimeouts = useRef([]); // Stores IDs for timeouts that turn lights ON
-    const goTimeoutRef = useRef(null); // Stores the ID for the timeout that triggers GO!
+    const lightTimeoutId = useRef(null); // Used for the next light's timeout
+    const goTimeoutId = useRef(null); // Used for the GO! timeout
 
     // Clears all timers and resets game state to initial
     const resetGame = useCallback(() => {
-        // Clear any existing timeouts to prevent old sequences from running
-        lightSequenceTimeouts.current.forEach(id => clearTimeout(id));
-        lightSequenceTimeouts.current = [];
-        clearTimeout(goTimeoutRef.current);
+        clearTimeout(lightTimeoutId.current);
+        clearTimeout(goTimeoutId.current);
 
         setLights(Array(5).fill(false)); // All lights off
         setMessage('Click "Start Game" to begin!');
@@ -28,65 +26,77 @@ function App() {
         reactionStartTime.current = null;
         setGameActive(false); // Game is not active
         setGameEnded(false); // Game has not ended (back to initial state)
+        setCurrentLightIndex(-1); // Reset light index
     }, []);
+
+    // Core function to schedule the next light or the GO signal
+    const scheduleNextLightOrGo = useCallback((index) => {
+        const numberOfLights = lights.length;
+
+        // Base delays for individual lights
+        const minTimePerLight = 200;
+        const maxTimePerLight = 600;
+
+        if (index < numberOfLights) {
+            // Schedule the next light to turn on
+            const delay = Math.random() * (maxTimePerLight - minTimePerLight) + minTimePerLight;
+            lightTimeoutId.current = setTimeout(() => {
+                setCurrentLightIndex(index + 1); // Move to the next light
+            }, delay);
+        } else {
+            // All lights are red (index === numberOfLights)
+            // Now schedule the GO signal (lights turn off)
+            
+            // Schedule the GO signal with a random delay
+            let delayBeforeLightsOff = Math.random() * 3000 + 1000; // 1 to 4 seconds after all lights are red
+
+            goTimeoutId.current = setTimeout(() => {
+                setLights(Array(numberOfLights).fill(false)); // ALL LIGHTS OFF - THIS IS THE SIGNAL!
+                setMessage('GO!');
+                reactionStartTime.current = Date.now(); // Record the exact moment lights go off
+            }, delayBeforeLightsOff);
+        }
+    }, [lights.length]); // Depends on lights.length for array size
+
+    // Effect to handle the light sequencing and GO signal
+    useEffect(() => {
+        if (gameActive) {
+            if (currentLightIndex === -1) {
+                // Initial state for sequencing, start with the first light
+                setMessage('Get ready...');
+                setCurrentLightIndex(0);
+            } else if (currentLightIndex < lights.length) {
+                // Turn on the current light
+                setLights(prevLights => {
+                    const newLights = [...prevLights];
+                    newLights[currentLightIndex] = true;
+                    return newLights;
+                });
+                // Schedule the next light
+                scheduleNextLightOrGo(currentLightIndex);
+            } else {
+                // All lights are red (currentLightIndex === lights.length)
+                // Now, `scheduleNextLightOrGo` was called when the *last* light was scheduled,
+                // and it would have set up the `goTimeoutId`. No need to re-schedule here.
+            }
+        }
+    }, [gameActive, currentLightIndex, lights.length, scheduleNextLightOrGo, setLights]);
+
 
     // Starts the game sequence
     const startGame = useCallback(() => {
-        resetGame(); // Always start with a clean slate
-        setMessage('Get ready...');
-        setGameActive(true); // Game sequence is now active (lights are coming)
-        setGameEnded(false); // Reset game ended state
+        resetGame(); // Ensure a clean slate
+        setGameActive(true); // Set game to active to begin the useEffect flow
+    }, [resetGame]);
 
-        const numberOfLights = lights.length;
-        const maxTotalWaitTime = 4500; // Max total time from start to GO! (4.5 seconds)
-        const minTimePerLight = 200; // Minimum time for each light to turn on
-        const maxTimePerLight = 600; // Maximum time for each light to turn on
-
-        let accumulatedLightOnTime = 0;
-        const currentLightTimeouts = []; // To store timeouts for the current sequence
-
-        // Schedule individual lights to turn on
-        for (let i = 0; i < numberOfLights; i++) {
-            const delay = Math.random() * (maxTimePerLight - minTimePerLight) + minTimePerLight;
-            accumulatedLightOnTime += delay; // Sum up the delays for total light-on time
-
-            // *** CRITICAL FIX HERE ***
-            // Schedule the light to turn on after accumulated time
-            const timeoutId = setTimeout((indexToTurnOn) => {
-                setLights(prevLights => {
-                    const newLights = [...prevLights];
-                    newLights[indexToTurnOn] = true; // Turn the specific light red
-                    return newLights;
-                });
-            }, accumulatedLightOnTime, i); // Pass 'i' as an argument to setTimeout's callback
-
-            currentLightTimeouts.push(timeoutId);
-        }
-        lightSequenceTimeouts.current = currentLightTimeouts; // Save all light-on timeouts
-
-        // Calculate the final delay before lights go off (GO!)
-        let delayBeforeLightsOff = Math.max(500, maxTotalWaitTime - accumulatedLightOnTime);
-        // Add some small randomness to the final "GO" delay within the remaining time
-        delayBeforeLightsOff = delayBeforeLightsOff * 0.5 + Math.random() * (delayBeforeLightsOff * 0.5);
-        delayBeforeLightsOff = Math.max(500, Math.min(2000, delayBeforeLightsOff)); // Cap between 0.5s and 2s for controlled feel
-
-        // Schedule the "GO!" signal (lights off)
-        goTimeoutRef.current = setTimeout(() => {
-            setLights(Array(numberOfLights).fill(false)); // ALL LIGHTS OFF - THIS IS THE SIGNAL!
-            setMessage('GO!');
-            reactionStartTime.current = Date.now(); // Record the exact moment lights go off
-        }, accumulatedLightOnTime + delayBeforeLightsOff); // Total time from start of sequence to GO!
-
-    }, [lights.length, resetGame]); // Dependencies for useCallback
 
     // Records the reaction time when the user clicks or presses a key
     const recordReactionTime = useCallback(() => {
         if (!gameActive) return; // Ignore input if game is not in an active playing state
 
         // Clear all pending timers immediately after reaction
-        lightSequenceTimeouts.current.forEach(id => clearTimeout(id));
-        lightSequenceTimeouts.current = [];
-        clearTimeout(goTimeoutRef.current);
+        clearTimeout(lightTimeoutId.current);
+        clearTimeout(goTimeoutId.current);
 
         // Check if the click happened before the lights turned off (too early)
         if (!reactionStartTime.current) {
@@ -102,7 +112,8 @@ function App() {
 
         setGameActive(false); // Game over
         setGameEnded(true); // Mark game as ended
-    }, [gameActive]); // Dependencies for useCallback
+        setCurrentLightIndex(-1); // Reset for next game
+    }, [gameActive]);
 
     // Effect hook for handling keyboard input (Space or Enter key)
     useEffect(() => {
@@ -117,11 +128,10 @@ function App() {
         // Cleanup function: runs when component unmounts or before effect re-runs
         return () => {
             document.removeEventListener('keydown', handleKeyPress);
-            // Crucial: clear any active timeouts if the component unmounts unexpectedly
-            lightSequenceTimeouts.current.forEach(id => clearTimeout(id));
-            clearTimeout(goTimeoutRef.current);
+            clearTimeout(lightTimeoutId.current);
+            clearTimeout(goTimeoutId.current);
         };
-    }, [gameActive, recordReactionTime]); // Dependencies for useEffect
+    }, [gameActive, recordReactionTime]);
 
     // Determine button text and visibility
     const mainButtonText = gameActive ? 'Click to react' : 'Start Game';
@@ -141,8 +151,8 @@ function App() {
             <Controls
                 onStart={startGame}
                 onRestart={resetGame}
-                showStart={!gameActive} // Always show this button unless game is active (i.e., lights are sequencing)
-                showRestart={showRestartButton} // Only show if game has ended
+                showStart={!gameActive} // Only show the main button if game is NOT active
+                showRestart={showRestartButton} // Only show restart if game has ended
                 buttonText={mainButtonText}
             />
 
