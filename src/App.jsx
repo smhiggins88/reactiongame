@@ -7,6 +7,7 @@ function App() {
   const [gameState, setGameState] = useState('ready'); // ready, waiting, go, falseStart, result
   const [lights, setLights] = useState([false, false, false, false, false]);
   const [reactionTime, setReactionTime] = useState(null);
+  const [bestTime, setBestTime] = useState(null);
   const goTimeRef = useRef(null);
   const timeoutRefs = useRef([]);
 
@@ -18,7 +19,7 @@ function App() {
     const lightInterval = 300; // Faster interval between red lights
     timeoutRefs.current = [];
 
-    // Light up red lights quickly
+    // Turn on red lights quickly
     for (let i = 0; i < 5; i++) {
       timeoutRefs.current.push(
         setTimeout(() => {
@@ -31,7 +32,7 @@ function App() {
       );
     }
 
-    // Shorter delay before "Go!"
+    // Shorter random delay before "Go!"
     const goDelay = 500 + Math.random() * 1000;
     const goTime = 500 + 5 * lightInterval + goDelay;
 
@@ -51,6 +52,9 @@ function App() {
     } else if (gameState === 'go') {
       const time = Date.now() - goTimeRef.current;
       setReactionTime(time);
+
+      setBestTime(prev => (prev === null || time < prev ? time : prev));
+
       setGameState('result');
     }
   };
@@ -68,7 +72,7 @@ function App() {
   };
 
   useEffect(() => {
-    return () => cleanupTimers(); // Clear timers on unmount
+    return () => cleanupTimers(); // Clean up on unmount
   }, []);
 
   return (
@@ -81,6 +85,7 @@ function App() {
         onClick={handleClick}
         onRestart={restartGame}
         reactionTime={reactionTime}
+        bestTime={bestTime}
       />
     </div>
   );
