@@ -81,3 +81,21 @@ button:active {
   gap: 20px; /* Space between buttons */
   margin-top: 20px; /* Space above buttons */
 }
+
+.static-page {
+  color: black;
+  text-align: left;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.static-page h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.static-page p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
