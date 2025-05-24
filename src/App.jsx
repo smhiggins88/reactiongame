@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Light from './components/light';
-import Controls from './components/controls';
+import Light from './components/Light';
+import Controls from './components/Controls';
 import About from './components/About';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import Contact from './components/Contact';
