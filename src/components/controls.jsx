@@ -17,12 +17,14 @@ function Controls({ gameState, onStart, onClick, onRestart, reactionTime }) {
         </>
       )}
 
-      {gameState === 'result' && (
-        <>
-          <p className="result-text">Your time: {reactionTime} ms</p>
-          <button onClick={onRestart}>Try Again</button>
-        </>
-      )}
+{gameState === 'result' && (
+  <>
+    <p className="result-text">Your time: {reactionTime} ms</p>
+    <p className="f1-benchmark">Average F1 driver: 250 ms</p>
+    <button onClick={onRestart}>Try Again</button>
+  </>
+)}
+
     </div>
   );
 }
