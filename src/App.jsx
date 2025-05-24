@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Light from './components/light';
 import Controls from './components/controls';
+import About from './components/About';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import Contact from './components/Contact';
 import './App.css';
 
-function App() {
-  const [gameState, setGameState] = useState('ready'); // ready, waiting, go, falseStart, result
+function Game() {
+  const [gameState, setGameState] = useState('ready');
   const [lights, setLights] = useState([false, false, false, false, false]);
   const [reactionTime, setReactionTime] = useState(null);
   const [bestTime, setBestTime] = useState(null);
@@ -16,10 +20,9 @@ function App() {
     setLights([false, false, false, false, false]);
     setReactionTime(null);
 
-    const lightInterval = 300; // Faster interval between red lights
+    const lightInterval = 300;
     timeoutRefs.current = [];
 
-    // Turn on red lights quickly
     for (let i = 0; i < 5; i++) {
       timeoutRefs.current.push(
         setTimeout(() => {
@@ -32,7 +35,6 @@ function App() {
       );
     }
 
-    // Shorter random delay before "Go!"
     const goDelay = 500 + Math.random() * 1000;
     const goTime = 500 + 5 * lightInterval + goDelay;
 
@@ -52,9 +54,7 @@ function App() {
     } else if (gameState === 'go') {
       const time = Date.now() - goTimeRef.current;
       setReactionTime(time);
-
       setBestTime(prev => (prev === null || time < prev ? time : prev));
-
       setGameState('result');
     }
   };
@@ -72,7 +72,7 @@ function App() {
   };
 
   useEffect(() => {
-    return () => cleanupTimers(); // Clean up on unmount
+    return () => cleanupTimers();
   }, []);
 
   return (
@@ -88,6 +88,24 @@ function App() {
         bestTime={bestTime}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <div className="app">
+        <nav>
+          <Link to="/">Game</Link> | <Link to="/about">About</Link> | <Link to="/privacy">Privacy</Link> | <Link to="/contact">Contact</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<Game />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/contact" element={<Contact />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

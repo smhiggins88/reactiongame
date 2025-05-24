@@ -9,7 +9,7 @@ function Controls({ gameState, onStart, onClick, onRestart, reactionTime, bestTi
       )}
 
       {gameState === 'waiting' && (
-        <button onClick={onClick}>React!</button>
+        <button onClick={onClick}>Get ready...</button>
       )}
 
       {gameState === 'go' && (
