@@ -4,7 +4,7 @@ import Light from './components/light';
 import Controls from './components/controls';
 import About from './components/about';
 import PrivacyPolicy from './components/privacypolicy';
-import Contact from './components/contact';
+import Contact from './components/Contact';
 import './App.css';
 
 function Game() {
